@@ -3,7 +3,7 @@
 import sys
 sys.path.append("..")
 
-import sim
+from .. import sim
 import pytest
 
 def test_sim():
