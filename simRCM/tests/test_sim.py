@@ -1,5 +1,5 @@
 
-from .. import Sim
+from ..simrcm import sim
 import pytest
 
 def test_sim():
