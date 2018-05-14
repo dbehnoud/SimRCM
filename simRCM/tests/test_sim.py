@@ -1,10 +1,14 @@
 
-from ..simrcm import sim
+
+import sys
+sys.path.append("..")
+
+import sim
 import pytest
 
 def test_sim():
 
- gas = Sim.simulation()
+ gas = sim.simulation()
  
- assert gas.T == 2869.88
- assert gas.P == 259246
+ assert gas.T == pytest.approx(2869.88, rel=1e-1)
+ assert gas.P == pytest.approx(259246, rel=1e-1)
