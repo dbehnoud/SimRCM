@@ -1,13 +1,12 @@
+"""
+Ideal gas, adiabatic kinetics simulation.
+"""
 
 import sys
 import numpy as np
 import cantera as ct
 
 def simulation():
-
-"""
-Ideal gas, adiabatic kinetics simulation.
-"""
 
  gas = ct.Solution('gri30.xml')
  gas.TPX = 1001.0, ct.one_atm, 'H2:2,O2:1,N2:4'
