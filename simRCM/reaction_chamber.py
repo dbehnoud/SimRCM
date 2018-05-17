@@ -26,7 +26,6 @@ def simulation():
 
 def plot_results():
 # Plot the results if matplotlib is installed.
-# See http://matplotlib.org/ to get it.
 
  if '--plot' in sys.argv[1:]:
     import matplotlib.pyplot as plt
