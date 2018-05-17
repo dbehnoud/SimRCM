@@ -1,8 +1,3 @@
-
-
-import sys
-sys.path.append("..")
-
 from .. import sim
 import pytest
 
