@@ -1,4 +1,4 @@
-from .. import sim
+from .. import reaction_chamber
 import pytest
 
 def test_sim():
