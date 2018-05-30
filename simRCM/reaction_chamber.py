@@ -12,6 +12,10 @@ def simulation():
     gas = ct.Solution('gri30.xml')
     gas.TPX = 1001.0, ct.one_atm, 'H2:2,O2:1,N2:4'
     r = ct.IdealGasReactor(gas)
+
+    gas = ct.Solution('gri30.xml')
+    gas.TPX = 1001.0, ct.one_atm, 'H2:2,O2:1,N2:4'
+    r = ct.IdealGasReactor(gas)
  
     sim = ct.ReactorNet([r])
     time = 0.0
@@ -30,7 +34,7 @@ def simulation():
         """
         Plot the results if matplotlib is installed.
         """
-
+    
         if '--plot' in sys.argv[1:]:
             import matplotlib.pyplot as plt
             plt.clf()
