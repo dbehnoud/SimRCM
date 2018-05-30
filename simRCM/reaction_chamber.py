@@ -8,25 +8,27 @@ def simulation():
     """
     Ideal gas, adiabatic kinetics simulation.
     """
-
+    
+    # define the reactor content
     gas = ct.Solution('gri30.xml')
     gas.TPX = 1001.0, ct.one_atm, 'H2:2,O2:1,N2:4'
-    r = ct.IdealGasReactor(gas)
-
-    gas = ct.Solution('gri30.xml')
-    gas.TPX = 1001.0, ct.one_atm, 'H2:2,O2:1,N2:4'
+    
+    # define the reactor
     r = ct.IdealGasReactor(gas)
  
+    # implements the connection to the numerical solver
     sim = ct.ReactorNet([r])
     time = 0.0
     states = ct.SolutionArray(gas, extra=['t'])
 
+    # print results
     print('%10s %10s %10s %14s' % ('t [s]','T [K]','P [Pa]','u [J/kg]'))
     for n in range(100):
         time += 1.e-5
         sim.advance(time)
         states.append(r.thermo.state, t=time*1e3)
         print('%10.3e %10.3f %10.3f %14.6e' % (sim.time, r.T, r.thermo.P, r.thermo.u))
+        
     return gas
 
     def plot_results():
