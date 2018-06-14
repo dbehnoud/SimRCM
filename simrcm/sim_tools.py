@@ -15,8 +15,8 @@ class Inputs(object):
     
         self.bore = inputs['bore']
         self.t0 = inputs['t0']
-        self.z = inputs['z']
-        #self.t_wall = inputs['t_wall']
+        self.z = inputs['znz']
+        self.t_wall = inputs['T_wall']
         self.v_rcm = vol_list[0]
         self.a_rcm = (np.pi/4)*self.bore**2
         self.mechanism = inputs['mechanism']
@@ -82,7 +82,7 @@ class VolumeProfile(object):
              return 0
          
 
-def def_zones():
+def def_zones(z):
     
     p = np.ones(z)
     p[-1] = p[-1] - bore/2/t0

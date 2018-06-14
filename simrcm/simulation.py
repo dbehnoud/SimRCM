@@ -1,16 +1,16 @@
 import sim_tools 
 import cantera as ct
 
-inputs = sim_tools.Inputs('assets\example_input.yaml')
+inputs = sim_tools.Inputs('example_input.yaml')
 
 bore = inputs.bore
 t0 = inputs.t0
 z = inputs.z
 v_rcm = inputs.v_rcm
 a_rcm = inputs.a_rcm
-t_wall = inputs.T_wall
+t_wall = inputs.t_wall
 
-zone = sim_tools.def_zones()
+zone = sim_tools.def_zones(z)
 
 v_factor = [0]
 for x in range(1,z+1):
