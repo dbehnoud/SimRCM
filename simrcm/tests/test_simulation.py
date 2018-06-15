@@ -4,7 +4,7 @@ import pytest
 
 
     
-ig1, p1, temp1, oh, t1 = simrcm.simulation.simulation1('example_input.yaml')
+ig1, p1, temp1, t1 = simrcm.simulation.simulation1('example_input.yaml')
 
 
 
