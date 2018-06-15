@@ -1,10 +1,10 @@
-import simulation
-import sim_tools
+import simrcm.simulation
+import simrcm.sim_tools
 import pytest
 
 
     
-ig1, p1, temp1, oh, t1 = simulation.simulation1('example_input.yaml')
+ig1, p1, temp1, oh, t1 = simrcm.simulation.simulation1('example_input.yaml')
 
 
 
