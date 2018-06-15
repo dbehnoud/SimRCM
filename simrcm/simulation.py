@@ -11,7 +11,7 @@ def simulation1(file):
     z = inputs.z
     v_rcm = inputs.v_rcm
     a_rcm = inputs.a_rcm
-    t_wall = inputs.T_wall
+    t_wall = inputs.t_wall
     temp0 = inputs.temp0
     p0 = inputs.p0
     mechanism = inputs.mechanism
@@ -25,7 +25,7 @@ def simulation1(file):
         v_factor.append(zone[x].r_volume*a_rcm)
         
     r, env, contents = sim_tools.def_reactors(z, zone, temp0, p0, mechanism, mixture)
-    wq , wv = sim_tools.def_walls(r, env, zone, z, v_factor, keywords, t_wall)
+    wq , wv = sim_tools.def_walls(r, env, zone, z, v_factor, keywords, t_wall, a_rcm)
     
     netw =[0]        
     for x in range(1,z+1):        
@@ -34,24 +34,32 @@ def simulation1(file):
     time = []
     pressure = []
     temperature = []
+    OH_y = []
+    #for x in range(1,z+1):
+        #pressure.append(sim_tools.State
         
-    while netw[x].time < 0.05:
+    while netw[1].time < 0.05:
+        time.append(netw[1].time)
         temperature.append(r[1].thermo.T)
-        pressure.append(r[1].thermo.P)
+        pressure.append(r[6].thermo.P)
+        #OH_y.append(sim_tools.get_species_mass(5, r, z))
         for x in range(1,z+1):
             netw[x].step()   
         zone, r = sim_tools.cell_rezone(z, r, zone, contents) 
-        wq = sim_tools.modify_walls(wq, z, zone) 
+        wq = sim_tools.modify_walls(wq, z, zone, r, t_wall) 
+    
+    
+    
         
     dpdt = np.gradient(pressure, time, edge_order=2) 
     ignition_delay = time[np.argmax(dpdt)]
     
-    import matplotlib.pyplot as plt
+    #import matplotlib.pyplot as plt
     
-    plt.figure()
-    plt.plot(time, pressure)
-    plt.ylabel('Pressure [Pa]')
-    plt.xlabel('Time [s]')
-    plt.grid(True, which='both', axis='x');
+    #plt.figure()
+    #plt.plot(time, pressure)
+    #plt.ylabel('Pressure [Pa]')
+    #plt.xlabel('Time [s]')
+    #plt.grid(True, which='both', axis='x');
     
-    return ignition_delay
+    return ignition_delay, pressure, temperature, OH_y, time

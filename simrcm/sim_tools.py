@@ -3,23 +3,46 @@ import cantera as ct
 import yaml
 
 class Inputs(object):
+    """
+    Reads the YAML-encoded input file and sets the input values
+    
+    Parameters
+    ----------
+    filename : String filename of the input file
+        
+    Attributes
+    ----------
+    bore : Bore of the reaction chamber
+    t0 : Thickness of outermost zone
+    z : Number of zones
+    t_wall : Wall temperature
+    temp0 : The initial temperature of the simulation
+    p0 : The initial pressure of the simulation
+    v_rcm : Volume of the reactor at which the compression starts
+    a_rcm : Cross sectional area of the reaction chamber
+    mechanism : Chemical kinetic mechanism
+    mixture : Initial chemical composition
+    vprofile : The volume trace to be used for the simulation
+        
+    """
 
     def __init__(self, filename):
-
+        
         with open(filename, 'r') as f:
             inputs = yaml.safe_load(f)
         
-        #vp = inputs['vprofile']
         time_list = [row[0] for row in inputs['vprofile']]
-        vol_list = 1e-6*[row[1] for row in inputs['vprofile']]
-    
+        vol_list = []
+        for x in [row[1] for row in inputs['vprofile']]:
+            vol_list.append(1e-6*float(x))    
+              
         self.bore = inputs['bore']
         self.t0 = inputs['t0']
         self.z = inputs['znz']
         self.t_wall = inputs['T_wall']
         self.temp0 = inputs['temp0']
         self.p0 = inputs['p0']
-        self.v_rcm = 1e-6*vol_list[0]
+        self.v_rcm = vol_list[0]
         self.a_rcm = (np.pi/4)*self.bore**2
         self.mechanism = inputs['mechanism']
         self.mixture = inputs['mixture']
@@ -29,29 +52,18 @@ class Inputs(object):
 class VolumeProfile(object):
     """
     Set the velocity of the piston by using a user specified volume
-    profile. The initialization and calling of this class are handled
-    by the `Func1 <http://cantera.github.io/docs/sphinx/html/cython/zerodim.html#cantera.Func1>`_
-    interface of Cantera. Used with the input keyword :ref:`VPRO <VPRO>`
-    """
-
-    def __init__(self, keywords, a_rcm):
-        """Set the initial values of the arrays from the input keywords.
-
-        The time and volume are read from the input file and stored in
-        the ``keywords`` dictionary. The velocity is calculated by
-        assuming a unit area and using the forward difference,
-        calculated by ``numpy.diff``. This function is only called
-        once when the class is initialized at the beginning of a
-        problem so it is efficient.
+    profile.
+    The time and volume are read from the input file and stored in
+        the ``keywords`` dictionary. 
 
         :param keywords:
             Dictionary of keywords read from the input file
-        """
+    """
 
+    def __init__(self, keywords, a_rcm):
+        
         # The time and volume are stored as lists in the keywords
-        # dictionary. The volume is normalized by the first volume
-        # element so that a unit area can be used to calculate the
-        # velocity.
+        # dictionary. 
         self.time = np.array(keywords['vproTime'])
         self.volume = np.array(keywords['vproVol'])
 
@@ -86,7 +98,22 @@ class VolumeProfile(object):
          
 
 def def_zones(z, bore, t0, v_rcm, a_rcm):
+    """
+    Generates the initial mesh and defines zones
     
+    Parameters
+    ----------
+    z : Number of zones
+    bore : Bore of the reaction chamber
+    t0 : Thickness of outermost zone
+    v_rcm : Volume of the reactor at which the compression starts
+    a_rcm : Cross sectional area of the reaction chamber
+    
+    Returns
+    -------
+    zone : List of Zone objects
+    """
+    # Root finding algorithm for finding the growth factor (alpha)
     p = np.ones(z)
     p[-1] = p[-1] - bore/2/t0
     all_roots = np.roots(p)
@@ -94,11 +121,24 @@ def def_zones(z, bore, t0, v_rcm, a_rcm):
     alpha = alpha[alpha>0]
     alpha = np.real(alpha)	
     alpha = alpha*0.99
-    
-    
-    #from numpy.polynomial.polynomial import polyval
+     
     
     class Zone(object):
+        """
+        stores the geometrical information of zones
+        
+        Parameters
+        ----------
+        i : index of a single zone
+            
+        Attributes
+        ----------
+        radius : Radius of a single zone
+        height : Thickness of a single zone
+        volume : Volume of a single zone
+        thickness : Thickness of a single zone
+        surface_area : Outer surface area of a single zone
+        """
        
         def __init__(self, i ):
             
@@ -124,7 +164,7 @@ def def_zones(z, bore, t0, v_rcm, a_rcm):
             self.r_volume = self.volume/v_rcm
             
             self.surface_area = 2*np.pi*self.radius*self.height + 2*np.pi*np.square(self.radius)
-            #self.cross_area = np.pi*np.square(self.radius)
+            
                        
     zone = [0]
     for x in range(1,z+1):
@@ -162,7 +202,7 @@ def heat_transfer(z, zone, r, t_wall):
             qq[x] = k*(r[x].T-r[x+1].T)/((zone[x].thickness+zone[x+1].thickness)/2) 
         else:
             k = (r[x].thermo.thermal_conductivity + r[0].thermo.thermal_conductivity)/2
-            qq[x] = k*(r[x].T-t_wall)/(zone[x].thickness)
+            qq[x] = 2*k*(r[x].T-t_wall)/(zone[x].thickness)
                 
     
     q[1] = -qq[1]
@@ -172,7 +212,7 @@ def heat_transfer(z, zone, r, t_wall):
     
     return q
 
-def def_walls(r, env, zone, z, v_factor, keywords, t_wall):
+def def_walls(r, env, zone, z, v_factor, keywords, t_wall, a_rcm):
     wq = [0]
     wv = [0]
     q = heat_transfer(z, zone, r, t_wall)  
@@ -185,14 +225,14 @@ def def_walls(r, env, zone, z, v_factor, keywords, t_wall):
     wq.append(ct.Wall(r[z], env, A = zone[z].surface_area, Q = q[z]))
     
     for x in range(1,z+1):
-        wv.append(ct.Wall(r[x], env, velocity = VolumeProfile(keywords)))
+        wv.append(ct.Wall(r[x], env, velocity = VolumeProfile(keywords,a_rcm)))
         wv[x].area = v_factor[x] 
     return wq , wv
 
 
-def modifiy_walls(wq, z, zone):
+def modify_walls(wq, z, zone, r, t_wall):
     
-    q = heat_transfer()
+    q = heat_transfer(z, zone, r, t_wall)
     
     for x in range(1,z+1):
         wq[x].set_heat_flux(q[x])
@@ -205,7 +245,7 @@ def find_beta(x, zone):
     r = zone[x].radius
     h = zone[x].height  
     
-    eqn = np.array([2, (4*r + h), (2*r*h + 2*r**2), (-vsum(x)/np.pi + h*r**2)])
+    eqn = np.array([2, (4*r + h), (2*r*h + 2*r**2), (-vsum(x, zone)/np.pi + h*r**2)])
     eqn_roots = np.roots(eqn)
     beta_it = eqn_roots[np.isreal(eqn_roots)]
     beta_it = np.real(beta_it)
@@ -231,8 +271,9 @@ def cell_rezone(z, r, zone, contents):
     
     for x in range(1,z+1):
         v_old = r[x].volume
+        x_old = r[x].thermo.X
         specific_volume_old = r[x].thermo.volume_mass
-        gamma = r[x].thermo.cv/r[x].thermo.cp
+        gamma = r[x].thermo.cv_mole/r[x].thermo.cp_mole
         
         zone[x].volume = v_old*(r[x].thermo.P/p_rc)**gamma
         r[x].volume = zone[x].volume
@@ -240,14 +281,15 @@ def cell_rezone(z, r, zone, contents):
         specific_volume_new = r[x].volume/v_old * specific_volume_old
         
         v_zones[x] = zone[x].volume
-        internal_energy = r[x].thermo.u - (r[x].thermo.P + p_rc)*(r[x].volume-v_old)/r[x].mass/2
-        #temperature = r[x].thermo.T*(v_old/zone[x].volume)**(gamma-1)
-        contents[x].UV = internal_energy, specific_volume_new
-        #contents[x].UV = internal_energy, r[x].thermo.v
-        r[x].insert(contents[x])
+        #internal_energy = r[x].thermo.u - (r[x].thermo.P + p_rc)*(r[x].volume-v_old)/r[x].mass/2
+        temperature = r[x].thermo.T*(v_old/zone[x].volume)**(gamma-1)
         
-        #accum_v_sum += v_zones[x]
+        #contents[x].UV = internal_energy, specific_volume_new
+        contents[x].TPX = temperature, p_rc, x_old
+        #contents[x].UV = r[x].thermo.u, specific_volume_new
+        #r[x].insert(contents[x])
         
+               
         beta = find_beta(x, zone)
         
         #print("beta=%s" % beta)
@@ -267,6 +309,28 @@ def vsum(x, zone):
     for x in range(1,x+1):
         v += zone[x].volume
     return v
+
+
+class State(object):
+
+    def __init__(self):
+        
+        self.pressure = []
+        self.temperature = []
+        
+def get_species_mass(i, r, z):
+        oh = 0; rm = 0
+        for x in range(1,z+1):
+            oh += r[x].thermo.Y[i]*r[x].mass
+            rm += r[x].mass
+        return oh/rm
+                    
+                    
+                    
+                    
+                    
+                    
+    
 
 
 
