@@ -11,15 +11,18 @@ class Inputs(object):
         
         #vp = inputs['vprofile']
         time_list = [row[0] for row in inputs['vprofile']]
-        vol_list = [row[1] for row in inputs['vprofile']]
+        vol_list = 1e-6*[row[1] for row in inputs['vprofile']]
     
         self.bore = inputs['bore']
         self.t0 = inputs['t0']
         self.z = inputs['znz']
         self.t_wall = inputs['T_wall']
-        self.v_rcm = vol_list[0]
+        self.temp0 = inputs['temp0']
+        self.p0 = inputs['p0']
+        self.v_rcm = 1e-6*vol_list[0]
         self.a_rcm = (np.pi/4)*self.bore**2
         self.mechanism = inputs['mechanism']
+        self.mixture = inputs['mixture']
         self.vprofile = {'vproTime': time_list, 'vproVol': vol_list}
         
 
@@ -31,7 +34,7 @@ class VolumeProfile(object):
     interface of Cantera. Used with the input keyword :ref:`VPRO <VPRO>`
     """
 
-    def __init__(self, keywords):
+    def __init__(self, keywords, a_rcm):
         """Set the initial values of the arrays from the input keywords.
 
         The time and volume are read from the input file and stored in
@@ -82,7 +85,7 @@ class VolumeProfile(object):
              return 0
          
 
-def def_zones(z):
+def def_zones(z, bore, t0, v_rcm, a_rcm):
     
     p = np.ones(z)
     p[-1] = p[-1] - bore/2/t0
@@ -93,7 +96,7 @@ def def_zones(z):
     alpha = alpha*0.99
     
     
-    from numpy.polynomial.polynomial import polyval
+    #from numpy.polynomial.polynomial import polyval
     
     class Zone(object):
        
@@ -102,8 +105,8 @@ def def_zones(z):
             if i < z:
                 coef = t0*np.ones(z-i)
                   
-                self.radius = bore/2-polyval(alpha, coef)
-                self.height = v_rcm/a_rcm-2*polyval(alpha, coef)
+                self.radius = bore/2-np.polyval(coef, alpha)
+                self.height = v_rcm/a_rcm-2*np.polyval(coef, alpha)
             else:
                 self.radius = bore/2
                 self.height = v_rcm/a_rcm     
@@ -130,10 +133,10 @@ def def_zones(z):
     return zone
 
 
-def def_reactors():
+def def_reactors(z, zone, temp0, p0, mechanism, mixture):
     
     gas = ct.Solution(mechanism)
-    gas.TPX = temp0, p0, 'H2:0.125,O2:0.0625,N2:0.18125,Ar:0.63125'
+    gas.TPX = temp0, p0, mixture
     gas.transport_model = 'Multi'
 
     env = ct.Reservoir(ct.Solution(mechanism))
@@ -146,9 +149,9 @@ def def_reactors():
     for x in range(1,z+1):
         r.append(ct.IdealGasReactor(contents[x], volume = zone[x].volume))
           
-    return r,contents
+    return r, env, contents
 
-def heat_transfer():
+def heat_transfer(z, zone, r, t_wall):
     qq = np.zeros(z+1)
     q = np.zeros(z+1)
     
@@ -159,7 +162,7 @@ def heat_transfer():
             qq[x] = k*(r[x].T-r[x+1].T)/((zone[x].thickness+zone[x+1].thickness)/2) 
         else:
             k = (r[x].thermo.thermal_conductivity + r[0].thermo.thermal_conductivity)/2
-            qq[x] = k*(r[x].T-T_wall)/(zone[x].thickness)
+            qq[x] = k*(r[x].T-t_wall)/(zone[x].thickness)
                 
     
     q[1] = -qq[1]
@@ -169,10 +172,10 @@ def heat_transfer():
     
     return q
 
-def def_walls():
+def def_walls(r, env, zone, z, v_factor, keywords, t_wall):
     wq = [0]
     wv = [0]
-    q = heat_transfer()  
+    q = heat_transfer(z, zone, r, t_wall)  
         
     wq.append(ct.Wall(r[1], env, A = zone[1].surface_area, Q = q[1]))    
     
@@ -187,7 +190,7 @@ def def_walls():
     return wq , wv
 
 
-def modifiy_walls(wq):
+def modifiy_walls(wq, z, zone):
     
     q = heat_transfer()
     
@@ -197,7 +200,7 @@ def modifiy_walls(wq):
     
     return wq
 
-def find_beta(x):
+def find_beta(x, zone):
     
     r = zone[x].radius
     h = zone[x].height  
@@ -215,7 +218,7 @@ def find_beta(x):
         
     return beta
 
-def cell_rezone():
+def cell_rezone(z, r, zone, contents):
     
     #accum_v_sum = 0
     pv_zones = [0]
@@ -245,7 +248,7 @@ def cell_rezone():
         
         #accum_v_sum += v_zones[x]
         
-        beta = find_beta(x)
+        beta = find_beta(x, zone)
         
         #print("beta=%s" % beta)
         
@@ -259,7 +262,7 @@ def cell_rezone():
             
         return zone, r
     
-def vsum(x):
+def vsum(x, zone):
     v = 0.0
     for x in range(1,x+1):
         v += zone[x].volume
