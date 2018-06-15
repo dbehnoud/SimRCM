@@ -1,10 +1,10 @@
-import sim_tools 
+import simrcm.sim_tools 
 import cantera as ct
 import numpy as np
 
 def simulation1(file):
 
-    inputs = sim_tools.Inputs(file)
+    inputs = simrcm.sim_tools.Inputs(file)
     
     bore = inputs.bore
     t0 = inputs.t0
@@ -18,14 +18,14 @@ def simulation1(file):
     mixture = inputs.mixture
     keywords = inputs.vprofile
     
-    zone = sim_tools.def_zones(z, bore, t0, v_rcm, a_rcm)
+    zone = simrcm.sim_tools.def_zones(z, bore, t0, v_rcm, a_rcm)
     
     v_factor = [0]
     for x in range(1,z+1):
         v_factor.append(zone[x].r_volume*a_rcm)
         
-    r, env, contents = sim_tools.def_reactors(z, zone, temp0, p0, mechanism, mixture)
-    wq , wv = sim_tools.def_walls(r, env, zone, z, v_factor, keywords, t_wall, a_rcm)
+    r, env, contents = simrcm.sim_tools.def_reactors(z, zone, temp0, p0, mechanism, mixture)
+    wq , wv = simrcm.sim_tools.def_walls(r, env, zone, z, v_factor, keywords, t_wall, a_rcm)
     
     netw =[0]        
     for x in range(1,z+1):        
@@ -45,8 +45,8 @@ def simulation1(file):
         #OH_y.append(sim_tools.get_species_mass(5, r, z))
         for x in range(1,z+1):
             netw[x].step()   
-        zone, r = sim_tools.cell_rezone(z, r, zone, contents) 
-        wq = sim_tools.modify_walls(wq, z, zone, r, t_wall) 
+        zone, r = simrcm.sim_tools.cell_rezone(z, r, zone, contents) 
+        wq = simrcm.sim_tools.modify_walls(wq, z, zone, r, t_wall) 
     
     
     dpdt = np.gradient(pressure, time, edge_order=2) 
