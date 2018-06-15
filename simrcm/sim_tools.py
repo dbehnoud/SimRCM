@@ -324,6 +324,23 @@ def get_species_mass(i, r, z):
             oh += r[x].thermo.Y[i]*r[x].mass
             rm += r[x].mass
         return oh/rm
+    
+def plot_pressure_trace(t, p):
+    
+    from matplotlib.backends.backend_pdf import PdfPages
+    import matplotlib.pyplot as plt 
+    
+    with PdfPages('pressure.pdf') as pdf:
+        plt.figure()
+        plt.plot(t, p)
+        #plt.xlim(0.03,0.035)
+        #plt.ylim(0,1e7)
+        plt.ylabel('Pressure [Pa]')
+        plt.xlabel('Time [s]')
+        plt.grid(True, which='both', axis='x')
+        #plt.legend(('z: 1', 'z: 6', 'z: 10'))
+        pdf.savefig()
+    
                     
                     
                     

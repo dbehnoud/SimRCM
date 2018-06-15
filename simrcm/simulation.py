@@ -34,7 +34,7 @@ def simulation1(file):
     time = []
     pressure = []
     temperature = []
-    OH_y = []
+    #OH_y = []
     #for x in range(1,z+1):
         #pressure.append(sim_tools.State
         
@@ -49,17 +49,9 @@ def simulation1(file):
         wq = sim_tools.modify_walls(wq, z, zone, r, t_wall) 
     
     
-    
-        
     dpdt = np.gradient(pressure, time, edge_order=2) 
     ignition_delay = time[np.argmax(dpdt)]
     
-    #import matplotlib.pyplot as plt
     
-    #plt.figure()
-    #plt.plot(time, pressure)
-    #plt.ylabel('Pressure [Pa]')
-    #plt.xlabel('Time [s]')
-    #plt.grid(True, which='both', axis='x');
     
-    return ignition_delay, pressure, temperature, OH_y, time
+    return ignition_delay, pressure, temperature, time
