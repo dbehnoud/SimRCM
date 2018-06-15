@@ -53,11 +53,8 @@ class VolumeProfile(object):
     """
     Set the velocity of the piston by using a user specified volume
     profile.
-    The time and volume are read from the input file and stored in
-        the ``keywords`` dictionary. 
-
-        :param keywords:
-            Dictionary of keywords read from the input file
+    :param keywords:
+     Dictionary of keywords read from the input file
     """
 
     def __init__(self, keywords, a_rcm):
@@ -161,11 +158,9 @@ def def_zones(z, bore, t0, v_rcm, a_rcm):
             else:
                 self.volume = (np.pi*np.square(self.radius)*self.height)-(np.pi*np.square(self.radius-self.thickness)*(self.height-2*self.thickness))
             
-            self.r_volume = self.volume/v_rcm
-            
+            self.r_volume = self.volume/v_rcm  
             self.surface_area = 2*np.pi*self.radius*self.height + 2*np.pi*np.square(self.radius)
-            
-                       
+                         
     zone = [0]
     for x in range(1,z+1):
         zone.append(Zone(x))
@@ -174,6 +169,16 @@ def def_zones(z, bore, t0, v_rcm, a_rcm):
 
 
 def def_reactors(z, zone, temp0, p0, mechanism, mixture):
+    """
+    Defines reactors
+         
+    Returns
+    -------
+    r : List of Cantera Reactor objects
+    env: Cantera Reservoir object
+    contents: List of Cantera solution objects corresponding to content 
+              of each reactor
+    """
     
     gas = ct.Solution(mechanism)
     gas.TPX = temp0, p0, mixture
@@ -192,19 +197,26 @@ def def_reactors(z, zone, temp0, p0, mechanism, mixture):
     return r, env, contents
 
 def heat_transfer(z, zone, r, t_wall):
+    """
+    Calculates heat fluxes
+    
+    Returns
+    -------
+    q : List containing heat flux values for all zones
+    """
+    
     qq = np.zeros(z+1)
     q = np.zeros(z+1)
     
     for x in range(1,z+1):
-        
         if x < z:
+            # Evaluate average thermal conductivity
             k = (r[x].thermo.thermal_conductivity + r[x+1].thermo.thermal_conductivity)/2
             qq[x] = k*(r[x].T-r[x+1].T)/((zone[x].thickness+zone[x+1].thickness)/2) 
         else:
             k = (r[x].thermo.thermal_conductivity + r[0].thermo.thermal_conductivity)/2
             qq[x] = 2*k*(r[x].T-t_wall)/(zone[x].thickness)
-                
-    
+               
     q[1] = -qq[1]
     
     for x in range(2,z+1):	
@@ -213,6 +225,14 @@ def heat_transfer(z, zone, r, t_wall):
     return q
 
 def def_walls(r, env, zone, z, v_factor, keywords, t_wall, a_rcm):
+    """
+    Defines walls for handling the volume variation and heat transfer
+    
+    Returns
+    -------
+    wq : List of Cantera Wall objects handling the heat transfer
+    wv: List of Cantera Wall objects handling the volume trace
+    """
     wq = [0]
     wv = [0]
     q = heat_transfer(z, zone, r, t_wall)  
@@ -231,6 +251,13 @@ def def_walls(r, env, zone, z, v_factor, keywords, t_wall, a_rcm):
 
 
 def modify_walls(wq, z, zone, r, t_wall):
+    """
+    Updates the heat trasfer walls after cell rezoning
+    
+    Returns
+    -------
+    wq : Updated wq
+    """
     
     q = heat_transfer(z, zone, r, t_wall)
     
@@ -241,6 +268,13 @@ def modify_walls(wq, z, zone, r, t_wall):
     return wq
 
 def find_beta(x, zone):
+    """
+    Root finding algorithm 
+    
+    Returns
+    -------
+    beta : The magnitude by which the outer surface of a particular zone grows/shrinks
+    """
     
     r = zone[x].radius
     h = zone[x].height  
@@ -259,11 +293,18 @@ def find_beta(x, zone):
     return beta
 
 def cell_rezone(z, r, zone, contents):
+    """
+    Updates the zone's geometry after isentropic expansion/contraction 
     
-    #accum_v_sum = 0
+    Returns
+    -------
+    r : Updated r
+    zone: Updated zone
+    """
+    
     pv_zones = [0]
     v_zones = [0]
-    
+    # Volume averaged pressure evaluation
     for x in range(1,z+1):
         pv_zones.append(r[x].thermo.P*r[x].volume)
         v_zones.append(r[x].volume)
@@ -273,6 +314,7 @@ def cell_rezone(z, r, zone, contents):
         v_old = r[x].volume
         x_old = r[x].thermo.X
         specific_volume_old = r[x].thermo.volume_mass
+        
         gamma = r[x].thermo.cv_mole/r[x].thermo.cp_mole
         
         zone[x].volume = v_old*(r[x].thermo.P/p_rc)**gamma
@@ -281,18 +323,10 @@ def cell_rezone(z, r, zone, contents):
         specific_volume_new = r[x].volume/v_old * specific_volume_old
         
         v_zones[x] = zone[x].volume
-        #internal_energy = r[x].thermo.u - (r[x].thermo.P + p_rc)*(r[x].volume-v_old)/r[x].mass/2
         temperature = r[x].thermo.T*(v_old/zone[x].volume)**(gamma-1)
-        
-        #contents[x].UV = internal_energy, specific_volume_new
         contents[x].TPX = temperature, p_rc, x_old
-        #contents[x].UV = r[x].thermo.u, specific_volume_new
-        #r[x].insert(contents[x])
-        
-               
+        r[x].insert(contents[x]) 
         beta = find_beta(x, zone)
-        
-        #print("beta=%s" % beta)
         
         zone[x].radius += beta
         zone[x].height += 2*beta
@@ -309,15 +343,7 @@ def vsum(x, zone):
     for x in range(1,x+1):
         v += zone[x].volume
     return v
-
-
-class State(object):
-
-    def __init__(self):
-        
-        self.pressure = []
-        self.temperature = []
-        
+       
 def get_species_mass(i, r, z):
         oh = 0; rm = 0
         for x in range(1,z+1):
@@ -325,21 +351,7 @@ def get_species_mass(i, r, z):
             rm += r[x].mass
         return oh/rm
     
-def plot_pressure_trace(t, p):
-    
-    from matplotlib.backends.backend_pdf import PdfPages
-    import matplotlib.pyplot as plt 
-    
-    with PdfPages('pressure.pdf') as pdf:
-        plt.figure()
-        plt.plot(t, p)
-        #plt.xlim(0.03,0.035)
-        #plt.ylim(0,1e7)
-        plt.ylabel('Pressure [Pa]')
-        plt.xlabel('Time [s]')
-        plt.grid(True, which='both', axis='x')
-        #plt.legend(('z: 1', 'z: 6', 'z: 10'))
-        pdf.savefig()
+
     
                     
                     
