@@ -1,4 +1,4 @@
-from .. import simulation
+import simulation
 
 import pytest
 
