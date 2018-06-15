@@ -1,7 +1,7 @@
 
 import tests.sim_tools
 
-inputs = sim_tools.Inputs('example_input.yaml')
+inputs = tests.sim_tools.Inputs('example_input.yaml')
 
 #assert inputs.z == 10
 assert inputs.bore == 0.0508 
