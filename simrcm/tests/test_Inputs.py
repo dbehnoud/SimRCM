@@ -1,7 +1,7 @@
 
-import tests.sim_tools
+import simrcm.tests.sim_tools
 
-inputs = tests.sim_tools.Inputs('example_input.yaml')
+inputs = simrcm.tests.sim_tools.Inputs('example_input.yaml')
 
 #assert inputs.z == 10
 assert inputs.bore == 0.0508 
