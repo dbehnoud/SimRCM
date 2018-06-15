@@ -50,7 +50,7 @@ def simulation1(filename):
     while netw[1].time < 0.05:
         time.append(netw[1].time)
         temperature.append(r[1].thermo.T)
-        pressure.append(r[6].thermo.P
+        pressure.append(r[6].thermo.P)
         for x in range(1,z+1):
             netw[x].step()   
         zone, r = simrcm.sim_tools.cell_rezone(z, r, zone, contents) 
