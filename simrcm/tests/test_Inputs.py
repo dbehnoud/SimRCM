@@ -1,5 +1,5 @@
 
-from .. import sim_tools
+import sim_tools
 
 inputs = sim_tools.Inputs('example_input.yaml')
 
