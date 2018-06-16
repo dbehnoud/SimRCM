@@ -2,6 +2,46 @@ import numpy as np
 import cantera as ct
 import yaml
 
+class Zone(object):
+    """
+    stores the geometrical information of zones
+
+    Parameters
+    ----------
+    i : index of a single zone
+
+    Attributes
+    ----------
+    radius : Radius of a single zone
+    height : Thickness of a single zone
+    volume : Volume of a single zone
+    thickness : Thickness of a single zone
+    surface_area : Outer surface area of a single zone
+    """
+
+    def __init__(self, i ):
+        if i < z:
+            coef = t0*np.ones(z-i)
+
+            self.radius = bore/2-np.polyval(coef, alpha)
+            self.height = v_rcm/a_rcm-2*np.polyval(coef, alpha)
+        else:
+            self.radius = bore/2
+            self.height = v_rcm/a_rcm     
+
+        if i == 1:
+            self.thickness = self.radius
+        else: 
+            self.thickness = t0*alpha**(z-i)
+
+        if i == 1:
+            self.volume = np.pi*np.square(self.radius)*self.height
+        else:
+            self.volume = (np.pi*np.square(self.radius)*self.height)-(np.pi*np.square(self.radius-self.thickness)*(self.height-2*self.thickness))
+
+        self.r_volume = self.volume/v_rcm  
+        self.surface_area = 2*np.pi*self.radius*self.height + 2*np.pi*np.square(self.radius)
+
 class Inputs(object):
     """
     Reads the YAML-encoded input file and sets the input values
@@ -119,48 +159,7 @@ def def_zones(z, bore, t0, v_rcm, a_rcm):
     alpha = np.real(alpha)	
     alpha = alpha*0.99
      
-    
-    class Zone(object):
-        """
-        stores the geometrical information of zones
-        
-        Parameters
-        ----------
-        i : index of a single zone
-            
-        Attributes
-        ----------
-        radius : Radius of a single zone
-        height : Thickness of a single zone
-        volume : Volume of a single zone
-        thickness : Thickness of a single zone
-        surface_area : Outer surface area of a single zone
-        """
-       
-        def __init__(self, i ):
-            
-            if i < z:
-                coef = t0*np.ones(z-i)
-                  
-                self.radius = bore/2-np.polyval(coef, alpha)
-                self.height = v_rcm/a_rcm-2*np.polyval(coef, alpha)
-            else:
-                self.radius = bore/2
-                self.height = v_rcm/a_rcm     
-        
-            if i == 1:
-                self.thickness = self.radius
-            else: 
-                self.thickness = t0*alpha**(z-i)
-                
-            if i == 1:
-                self.volume = np.pi*np.square(self.radius)*self.height
-            else:
-                self.volume = (np.pi*np.square(self.radius)*self.height)-(np.pi*np.square(self.radius-self.thickness)*(self.height-2*self.thickness))
-            
-            self.r_volume = self.volume/v_rcm  
-            self.surface_area = 2*np.pi*self.radius*self.height + 2*np.pi*np.square(self.radius)
-                         
+                             
     zone = [0]
     for x in range(1,z+1):
         zone.append(Zone(x))
