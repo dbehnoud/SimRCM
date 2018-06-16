@@ -284,6 +284,8 @@ def find_beta(x, zone):
     beta_it = np.real(beta_it)
     beta_it = beta_it[beta_it>-r]
     beta_it = beta_it[beta_it<r]
+    
+    beta = None
     if len(beta_it) == 1:
         beta = float(beta_it)
     else:
