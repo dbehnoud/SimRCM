@@ -19,7 +19,7 @@ class Zone(object):
     surface_area : Outer surface area of a single zone
     """
 
-    def __init__(self, i , z):
+    def __init__(self, i , z, bore, t0, v_rcm, a_rcm):
         if i < z:
             coef = t0*np.ones(z-i)
 
@@ -162,7 +162,7 @@ def def_zones(z, bore, t0, v_rcm, a_rcm):
                              
     zone = [0]
     for x in range(1,z+1):
-        zone.append(Zone(x, z))
+        zone.append(Zone(x, z, bore, t0, v_rcm, a_rcm))
         
     return zone
 
