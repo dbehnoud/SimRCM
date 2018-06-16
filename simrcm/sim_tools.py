@@ -23,7 +23,7 @@ class Zone(object):
         if i < z:
             coef = t0*np.ones(z-i)
 
-            self.radius = bore/2-np.polyval(coef, alpha)
+            self.radius = bore/2-np.polyval(coef, alpha)[0]
             self.height = v_rcm/a_rcm-2*np.polyval(coef, alpha)
         else:
             self.radius = bore/2
