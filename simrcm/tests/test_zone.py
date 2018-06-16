@@ -11,7 +11,7 @@ def test_zone():
     a_rcm = np.pi/4*bore**2
     v_total = a_rcm*36
     
-    zone = simrcm.sim_tools.def_zones(t0,z,bore,alpha,a_rcm,v_total)
+    zone = simrcm.sim_tools.def_zones(t0,z,bore,a_rcm,v_total)
     
     assert zone[1].radius == 5
     assert zone[1].height == 6
