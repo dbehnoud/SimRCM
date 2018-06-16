@@ -9,7 +9,7 @@ def test_zone():
     bore = 40
     alpha = 2
     a_rcm = np.pi/4*bore**2
-    v_total = a_rcm*36
+    v_rcm = a_rcm*36
     
     zone = simrcm.sim_tools.def_zones(z, bore, t0, v_rcm, a_rcm)
     
