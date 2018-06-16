@@ -1,13 +1,8 @@
 import numpy as np
+import simrcm.sim_tools
 from numpy.polynomial.polynomial import polyval
+ 
     
-def def_zones(t0,z,bore,alpha,a_rcm,v_total):        
-    zone = [0]
-    for x in range(1,z+1):
-        zone.append(Zone(x))
-    return zone
-
-
 def test_zone():
     t0 = 1
     z =5
@@ -16,7 +11,7 @@ def test_zone():
     a_rcm = np.pi/4*bore**2
     v_total = a_rcm*36
     
-    zone = def_zones(t0,z,bore,alpha,a_rcm,v_total)
+    zone = simrcm.sim_tools.def_zones(t0,z,bore,alpha,a_rcm,v_total)
     
     assert zone[1].radius == 5
     assert zone[1].height == 6
