@@ -286,9 +286,9 @@ def find_beta(x, zone):
     beta_it = beta_it[beta_it<r]
     
     beta = None
-    if len(beta_it) == 1:
-        beta = float(beta_it)
-    else:
+    if beta_it.shape[0] == 1:
+        beta = float(beta_it[0])
+    elif beta_it.shape[0] == 0:
         beta = 0
         
     return beta
