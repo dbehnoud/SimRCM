@@ -5,7 +5,7 @@ import pytest
 
 def test_1():
     ig1, p1, temp1, t1 = simrcm.simulation.simulation1('simrcm/tests/example_input.yaml')
-    assert ig1 == pytest.approx(0.001, rel=1e-1)
+    assert ig1 == pytest.approx(0.003, rel=1e-1)
 
    
     
